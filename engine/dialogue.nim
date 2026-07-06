@@ -1,34 +1,39 @@
 # engine/dialogue.nim
-import tables
+import std/[json, tables, os]
 
 type
   DialogueLine* = object
     text*: string
-    character*: string 
+    character*: string
 
   DialogueData* = Table[string, seq[DialogueLine]]
 
+var dialogueData: DialogueData
+
+proc loadDialogueData*(path: string): bool =
+  dialogueData = initTable[string, seq[DialogueLine]]()
+  if not fileExists(path):
+    echo "!! brak pliku dialogow: ", path
+    return false
+  try:
+    let data = parseFile(path)
+    for objId, linesNode in data.pairs:
+      var lines: seq[DialogueLine]
+      for lineNode in linesNode:
+        lines.add DialogueLine(
+          text: lineNode["text"].getStr,
+          character: (if lineNode.hasKey("character"): lineNode["character"].getStr else: "")
+        )
+      dialogueData[objId] = lines
+    return true
+  except JsonParsingError as e:
+    echo "!! zepsuty JSON w ", path, ": ", e.msg
+    return false
+  except CatchableError as e:
+    echo "!! nie udalo sie wczytac ", path, ": ", e.msg
+    return false
+
 proc loadDialogue*(objectId: string): seq[DialogueLine] =
-  case objectId:
-  of "square_0":
-    @[
-      DialogueLine(text: "elo", character: ""),
-      DialogueLine(text: "asasa", character: "")
-    ]
-  of "square_1":
-    @[
-      DialogueLine(text: "dhfdfh", character: ""),
-      DialogueLine(text: "hfdfdhfd", character: ""),
-      DialogueLine(text: "dfhfdhfdh", character: "")
-    ]
-  of "asd":
-    @[
-      DialogueLine(text: "kfgfdgfdfgdafgdaagfdgfadsagafrgfasdagfasgfsgfdsfhgfdsyhdfgh", character: ""),
-    ]
-  of "test":
-    @[
-      DialogueLine(text: "siusiak", character: ""),
-      DialogueLine(text: "afdgaafgd", character: "agdfgdfad")
-    ]
-  else:
-    @[DialogueLine(text: "tu nic nie ma", character: "")]
+  if dialogueData.hasKey(objectId):
+    return dialogueData[objectId]
+  return @[DialogueLine(text: "tu nic nie ma", character: "")]

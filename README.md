@@ -10,3 +10,4 @@ dependencies (clibs)
 
 built using nim
 using nimgl for opengl bindings
+tested n built on linux/nixos , check shell file for exact stuff needed

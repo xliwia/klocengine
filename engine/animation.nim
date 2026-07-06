@@ -2,6 +2,8 @@
 import sdl3, glm, math
 import game, config, renderer, dialogue
 
+# just to be clear ion know how this shit works
+# allat math shit my biggest enemy ffs
 proc pointInPoly*(px, py: float32, poly: openArray[tuple[x, y: float32]]): bool =
   var inside = false; var j = poly.len - 1
   for i in 0..<poly.len:

@@ -3,13 +3,13 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     nim
-    SDL3
-    xorg.libX11
-    xorg.libXext
-    xorg.libXrandr
-    xorg.libXinerama
-    xorg.libXcursor
-    xorg.libXi
+    sdl3
+    libx11
+    libxext
+    libxrandr
+    libxinerama
+    libxcursor
+    libxi
     libGL
     libGLU
     pkg-config
@@ -17,12 +17,12 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
-    export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath [
-      pkgs.SDL3
+    export LD_LIBRARY_PATH="/run/opengl-driver/lib:${pkgs.lib.makeLibraryPath [
+      pkgs.sdl3
       pkgs.libGL
-      pkgs.xorg.libX11
-      pkgs.xorg.libXext
-    ]}
+      pkgs.libx11
+      pkgs.libxext
+    ]}:$LD_LIBRARY_PATH"
     echo "kupadupa"
   '';
 }
