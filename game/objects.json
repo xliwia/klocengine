@@ -1,12 +1,16 @@
 [
   {
-    "id": "kaka",
+    "id": "murzyn",
     "points": [[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0], [-0.5, 0.5, 0]],
-    "dialogCamPos": [0, 0, 4]
+    "dialogCamPos": [0, 0, 4],
+    "texture": "assets/murzyn.bmp",
+    "renderType": "billboard"
   },
   {
     "id": "square_1",
     "points": [[1.5, -0.5, 0], [2.5, -0.5, 0], [2.5, 0.5, 0], [1.5, 0.5, 0]],
-    "dialogCamPos": [2, 0, 4]
+    "dialogCamPos": [2, 0, 4],
+    "texture": "assets/man.bmp",
+    "renderType": "square"
   }
 ]

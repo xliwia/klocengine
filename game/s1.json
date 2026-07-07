@@ -1,6 +1,30 @@
-{
-  "kaka": [
-    { "text": "test", "character": "kaka" },
-    { "text": "test2", "character": "kaka" }
-  ]
-}
+[
+  {
+    "murzyn": [
+      {
+        "speaker": "murzyn",
+        "character": "",
+        "text": "elo"
+      },
+      {
+        "speaker": "murzyn",
+        "character": "",
+        "text": "co tam"
+      }
+    ]
+  },
+  {
+    "square_1": [
+      {
+        "speaker": "drugi murzyn",
+        "character": "",
+        "text": "eloelo"
+      },
+      {
+        "speaker": "murzyn",
+        "character": "",
+        "text": "chuj ci w dupe"
+      }
+    ]
+  }
+]

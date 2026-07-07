@@ -1,6 +1,6 @@
 # engine/input.nim
 import sdl3
-import game, config
+import game, config, math
 
 proc handleEvent*(g: var Game, window: SDL_Window, event: SDL_Event, winW, winH: int32) =
   case event.`type`
@@ -10,6 +10,8 @@ proc handleEvent*(g: var Game, window: SDL_Window, event: SDL_Event, winW, winH:
   of SDL_EVENT_MOUSE_MOTION:
     if g.state == gsExplore and not g.skipMouse:
       g.camRot -= float32(event.motion.xrel) * MOUSE_SENS
+      const TAU = 6.2831853f
+      g.camRot = (g.camRot mod TAU + TAU) mod TAU
     else: g.skipMouse = false
   of SDL_EVENT_MOUSE_BUTTON_DOWN:
     if event.button.button == 1'u8:
@@ -22,9 +24,15 @@ proc handleEvent*(g: var Game, window: SDL_Window, event: SDL_Event, winW, winH:
         g.objects[g.activeObject].rot = 0f
         g.objects[g.activeObject].bounce = 0f
         g.camAnimStartPos = g.camPos
+        const TAU = 6.2831853f
+        let targetRot = 0f
+        var diff = targetRot - g.camRot
+        diff = (diff mod TAU + TAU) mod TAU
+        if diff > 3.1415927f:
+          diff -= TAU
         g.camAnimStartRot = g.camRot
+        g.camAnimTargetRot = g.camRot + diff
         g.camAnimTargetPos = g.objects[g.activeObject].dialogCamPos
-        g.camAnimTargetRot = 0f
         g.savedCamPos = g.camPos
         g.savedCamRot = g.camRot
       elif g.state == gsDialogue and g.squareHovered and not g.squareClicked:

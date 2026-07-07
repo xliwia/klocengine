@@ -15,7 +15,7 @@ proc pointInPoly*(px, py: float32, poly: openArray[tuple[x, y: float32]]): bool 
 
 proc isHovering*(mx, my: float32, points: array[4, Vec3f], camPos: Vec3f, camRot: float32, 
                  objRot: float32, objBounce: float32, winW, winH: int32, fov: float32): bool =
-  var sp: array[4, tuple[x, y: float32]]
+  var sp: array[4, tuple[x, y, w: float32]]
   
   var centerX = 0f; var centerZ = 0f
   for p in points:
@@ -36,7 +36,14 @@ proc isHovering*(mx, my: float32, points: array[4, Vec3f], camPos: Vec3f, camRot
     
     sp[i] = worldToScreen(rp, camPos, camRot, winW, winH, fov)
     if sp[i].x < -1000: return false
-  return pointInPoly(mx, my, sp)
+
+  var polyPoints: array[4, tuple[x, y: float32]]
+  for idx in 0..3:
+    polyPoints[idx] = (x: sp[idx].x, y: sp[idx].y)
+
+  return pointInPoly(mx, my, polyPoints)
+
+
 
 proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: int32) =
   var n: cint; let k = SDL_GetKeyboardState(n)
@@ -138,12 +145,45 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
     let forward = vec3f(-sin(g.camRot), 0f, -cos(g.camRot))
     let right = vec3f(cos(g.camRot), 0f, -sin(g.camRot))
     
-    if k[SDL_SCANCODE_W.int]: g.camPos = g.camPos + forward * MOVE_SPEED * dt * 60f
-    if k[SDL_SCANCODE_S.int]: g.camPos = g.camPos - forward * MOVE_SPEED * dt * 60f
-    if k[SDL_SCANCODE_A.int]: g.camPos = g.camPos - right * MOVE_SPEED * dt * 60f
-    if k[SDL_SCANCODE_D.int]: g.camPos = g.camPos + right * MOVE_SPEED * dt * 60f
+    # 1. Obliczamy pożądaną, następną pozycję na podstawie wciśniętych klawiszy
+    var nextPos = g.camPos
+    if k[SDL_SCANCODE_W.int]: nextPos = nextPos + forward * MOVE_SPEED * dt * 60f
+    if k[SDL_SCANCODE_S.int]: nextPos = nextPos - forward * MOVE_SPEED * dt * 60f
+    if k[SDL_SCANCODE_A.int]: nextPos = nextPos - right * MOVE_SPEED * dt * 60f
+    if k[SDL_SCANCODE_D.int]: nextPos = nextPos + right * MOVE_SPEED * dt * 60f
+    
+
+    let playerRadius = 0.4f # player radius for collision detection
+    
+    for obj in g.objects:
+      var minX = obj.points[0].x
+      var maxX = obj.points[0].x
+      var minZ = obj.points[0].z
+      var maxZ = obj.points[0].z
+      
+      for p in obj.points:
+        if p.x < minX: minX = p.x
+        if p.x > maxX: maxX = p.x
+        if p.z < minZ: minZ = p.z
+        if p.z > maxZ: maxZ = p.z
+        
+      # expand the bounding box by the player's radius to prevent the player from getting too close
+      minX -= playerRadius
+      maxX += playerRadius
+      minZ -= playerRadius
+      maxZ += playerRadius
+      
+      if nextPos.x >= minX and nextPos.x <= maxX and
+         nextPos.z >= minZ and nextPos.z <= maxZ:
+           if g.camPos.x < minX or g.camPos.x > maxX:
+             nextPos.x = g.camPos.x
+           elif g.camPos.z < minZ or g.camPos.z > maxZ:
+             nextPos.z = g.camPos.z
+
+    g.camPos = nextPos
     
     SDL_WarpMouseInWindow(window, float32(winW)/2f, float32(winH)/2f)
+
   
   if g.state == gsDialogue and g.squareClicked:
     if g.textIdx < g.text.len:

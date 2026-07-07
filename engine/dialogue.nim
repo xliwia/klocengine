@@ -3,6 +3,7 @@ import std/[json, tables, os]
 
 type
   DialogueLine* = object
+    speaker*: string
     text*: string
     character*: string
 
@@ -13,27 +14,44 @@ var dialogueData: DialogueData
 proc loadDialogueData*(path: string): bool =
   dialogueData = initTable[string, seq[DialogueLine]]()
   if not fileExists(path):
-    echo "!! brak pliku dialogow: ", path
+    echo "!! no dialog file: ", path
     return false
   try:
     let data = parseFile(path)
-    for objId, linesNode in data.pairs:
-      var lines: seq[DialogueLine]
-      for lineNode in linesNode:
-        lines.add DialogueLine(
-          text: lineNode["text"].getStr,
-          character: (if lineNode.hasKey("character"): lineNode["character"].getStr else: "")
-        )
-      dialogueData[objId] = lines
+    proc parseObj(objNode: JsonNode) =
+      for objId, linesNode in objNode.pairs:
+        var lines: seq[DialogueLine]
+        if linesNode.kind != JArray:
+          raise newException(ValueError, "dialogue lines must be an array")
+        for lineNode in linesNode:
+          lines.add DialogueLine(
+            text: lineNode["text"].getStr,
+            speaker: (if lineNode.hasKey("speaker"): lineNode["speaker"].getStr else: ""),
+            character: (if lineNode.hasKey("character"): lineNode["character"].getStr else: "")
+          )
+        dialogueData[objId] = lines
+
+    case data.kind
+    of JObject:
+      parseObj(data)
+    of JArray:
+      for item in data:
+        if item.kind == JObject:
+          parseObj(item)
+        else:
+          raise newException(ValueError, "expected object entries inside array")
+    else:
+      raise newException(ValueError, "dialogue file must be an object or array")
+
     return true
   except JsonParsingError as e:
-    echo "!! zepsuty JSON w ", path, ": ", e.msg
+    echo "!! corrupted json ", path, ": ", e.msg
     return false
   except CatchableError as e:
-    echo "!! nie udalo sie wczytac ", path, ": ", e.msg
+    echo "!! cant load ", path, ": ", e.msg
     return false
 
 proc loadDialogue*(objectId: string): seq[DialogueLine] =
   if dialogueData.hasKey(objectId):
     return dialogueData[objectId]
-  return @[DialogueLine(text: "tu nic nie ma", character: "")]
+  return @[DialogueLine(text: "nothing here", speaker: "", character: "")]

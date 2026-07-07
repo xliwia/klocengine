@@ -1,5 +1,5 @@
 # engine/game.nim
-import glm
+import sdl3, glm
 import dialogue
 import std/[json, os]
 
@@ -13,6 +13,8 @@ type
     rot*: float32
     bounce*: float32
     spinTimer*: float32
+    texture*: ptr SDL_Texture
+    renderType*: string 
 
   Game* = object
     state*: GameState
@@ -44,7 +46,7 @@ type
     hasError*: bool
     errorMessage*: string
 
-proc loadGameObjects(path: string): seq[GameObject] =
+proc loadGameObjects(path: string, renderer: SDL_Renderer): seq[GameObject] =
   if not fileExists(path):
     echo "!! object json files not found: ", path
     return @[]
@@ -55,11 +57,41 @@ proc loadGameObjects(path: string): seq[GameObject] =
       for i, p in objNode["points"].getElems():
         pts[i] = vec3f(p[0].getFloat, p[1].getFloat, p[2].getFloat)
       let dc = objNode["dialogCamPos"]
+      
+      var loadedTex: ptr SDL_Texture = nil
+      if objNode.hasKey("texture"):
+        let texPath = objNode["texture"].getStr
+        if texPath != "":
+          echo "loading texture: ", texPath
+          
+          let surface = SDL_LoadBMP(texPath.cstring)
+          if surface != nil:
+            echo "SDL_Surface created for: ", texPath
+            
+            # Tworzymy teksturę i bezpiecznie rzutujemy ją na wskaźnik ptr
+            let nativeTex = SDL_CreateTextureFromSurface(renderer, surface)
+            loadedTex = cast[ptr SDL_Texture](nativeTex)
+            
+            if loadedTex != nil:
+              echo "should work aight"
+            else:
+              echo "sum is fucked"
+              
+            SDL_DestroySurface(surface)
+          else:
+            echo "SDL_LoadBMP is nil for ", texPath
+            echo "has to be 24 - 32 bit uncompressed BMP"
+
+      let rType = if objNode.hasKey("renderType"): objNode["renderType"].getStr else: "square"
+
       result.add GameObject(
-        id: objNode["id"].getStr,
+        id: objNode["id"].getStr, 
         points: pts,
-        dialogCamPos: vec3f(dc[0].getFloat, dc[1].getFloat, dc[2].getFloat)
+        dialogCamPos: vec3f(dc[0].getFloat, dc[1].getFloat, dc[2].getFloat),
+        texture: loadedTex,
+        renderType: rType
       )
+
   except JsonParsingError as e:
     echo "!! corrupted json in ", path, ": ", e.msg
     return @[]
@@ -74,8 +106,8 @@ proc initGame*(): Game =
   result.stageFinished = false
   result.hasError = false
 
-proc loadStorylineStage*(game: var Game, file: string) =
-  let objs = loadGameObjects("game/objects.json")
+proc loadStorylineStage*(game: var Game, file: string, renderer: SDL_Renderer) = 
+  let objs = loadGameObjects("game/objects.json", renderer)
   let dialogOk = loadDialogueData(file)
   if not dialogOk:
     game.hasError = true
@@ -91,7 +123,7 @@ proc loadStorylineStage*(game: var Game, file: string) =
   game.stageFinished = false
   game.hasError = false
 
-proc loadFreetimeStage*(game: var Game, file: string) =
+proc loadFreetimeStage*(game: var Game, file: string, renderer: SDL_Renderer) = 
   if not fileExists(file):
     game.hasError = true
     game.errorMessage = "load failed " & file
@@ -100,7 +132,7 @@ proc loadFreetimeStage*(game: var Game, file: string) =
     echo "cause: ", game.errorMessage
     echo "================================================================"
     return
-  game.objects = loadGameObjects(file)
+  game.objects = loadGameObjects(file, renderer)
   game.activeObject = -1
   game.state = gsExplore
   game.stageFinished = false

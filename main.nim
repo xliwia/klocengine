@@ -34,22 +34,22 @@ proc loadInitConfig(path: string): tuple[w, h: int32, title: string] =
         stages.add Stage(kind: s["type"].getStr, file: s["file"].getStr)
   return (w, h, title)
 
-proc loadCurrentStage(game: var Game) =
+proc loadCurrentStage(game: var Game, renderer: SDL_Renderer) =
   if stageIndex < 0 or stageIndex >= stages.len: return
   let stage = stages[stageIndex]
   case stage.kind
   of "storyline":
     echo "attempting to load ", stage.file
-    loadStorylineStage(game, "game/" & stage.file)
+    loadStorylineStage(game, "game/" & stage.file, renderer)
   of "freetime":
     echo "attempting to load ", stage.file
-    loadFreetimeStage(game, "game/" & stage.file)
+    loadFreetimeStage(game, "game/" & stage.file, renderer)
   of "menu":
     discard
   else:
     discard
 
-proc advanceStage(game: var Game) =
+proc advanceStage(game: var Game, renderer: SDL_Renderer) =
   stageIndex.inc
   if stageIndex >= stages.len:
     if onComplete == "loop":
@@ -58,7 +58,7 @@ proc advanceStage(game: var Game) =
       game.hasError = true
       game.errorMessage = "no more stages (end of seq in init.json)"
       return
-  loadCurrentStage(game)
+  loadCurrentStage(game, renderer)
 
 proc drawErrorOverlay(renderer: SDL_Renderer, game: Game, winW, winH: int32) =
   discard SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
@@ -89,13 +89,14 @@ proc main() =
 
   var game = initGame()
   if stages.len > 0:
-    loadCurrentStage(game)
+    loadCurrentStage(game, renderer)
   else:
-    loadStorylineStage(game, "game/dialogue.json")
+    loadStorylineStage(game, "game/dialogue.json", renderer)
 
   var event: SDL_Event
   var running = true
   var lastTime = SDL_GetTicks()
+  var currentFPS: float32 = 0.0f
   var mouseX, mouseY: float32
   var prevHasError = false
 
@@ -103,6 +104,7 @@ proc main() =
     let currentTime = SDL_GetTicks()
     let dt = float32(currentTime - lastTime) / 1000f
     lastTime = currentTime
+    currentFPS = if dt > 0f: 1.0f/dt else: 0.0f
 
     var mx, my: cfloat
     discard SDL_GetMouseState(mx, my)
@@ -116,7 +118,7 @@ proc main() =
         if event.`type` == SDL_EVENT_MOUSE_BUTTON_DOWN and event.button.button == 1'u8:
           if event.button.x >= skipBtnX and event.button.x <= skipBtnX + skipBtnW and
              event.button.y >= skipBtnY and event.button.y <= skipBtnY + skipBtnH:
-            advanceStage(game)
+            advanceStage(game, renderer)
       else:
         handleEvent(game, window, event, winW, winH)
 
@@ -124,13 +126,13 @@ proc main() =
       update(game, window, dt, mouseX, mouseY, winW, winH)
 
     if game.stageFinished:
-      advanceStage(game)
+      advanceStage(game, renderer)
 
     if game.hasError != prevHasError:
       discard SDL_SetWindowRelativeMouseMode(window, not game.hasError)
       prevHasError = game.hasError
 
-    render(game, renderer, winW, winH)
+    render(game, renderer, winW, winH, currentFPS)
     if game.hasError:
       drawErrorOverlay(renderer, game, winW, winH)
     SDL_RenderPresent(renderer)
