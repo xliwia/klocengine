@@ -1,13 +1,13 @@
 [
   {
-    "murzyn": [
+    "mu": [
       {
-        "speaker": "murzyn",
+        "speaker": "mu",
         "character": "",
         "text": "elo"
       },
       {
-        "speaker": "murzyn",
+        "speaker": "mu",
         "character": "",
         "text": "co tam"
       }
@@ -16,14 +16,14 @@
   {
     "square_1": [
       {
-        "speaker": "drugi murzyn",
+        "speaker": "drugi czlowiek",
         "character": "",
         "text": "eloelo"
       },
       {
-        "speaker": "murzyn",
+        "speaker": "drugi czlowiek",
         "character": "",
-        "text": "chuj ci w dupe"
+        "text": "cojest grane"
       }
     ]
   }
