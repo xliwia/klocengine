@@ -4,7 +4,10 @@ import dialogue, config
 import std/[json, os, strutils]
 
 type
-  GameState* = enum gsExplore, gsDialogue
+  GameState* = enum
+    gsExplore
+    gsDialogue
+    gsMenu
 
   VNCharacter* = object
     id*: string
@@ -77,6 +80,20 @@ type
     showDialogueBox*: bool
     waitTimer*: float32
     waitingAfterLine*: bool
+    menuActive*: bool
+    menuScene*: MenuScene
+    menuHovered*: int
+
+  MenuItem* = object
+    text*: string
+    action*: string
+    target*: string
+    targetType*: string
+
+  MenuScene* = object
+    backgroundPath*: string
+    backgroundTexture*: ptr SDL_Texture
+    items*: seq[MenuItem]
 
 proc findProjectRoot(startDir: string): string =
   var dir = if startDir.len > 0: absolutePath(startDir) else: absolutePath(getCurrentDir())
@@ -200,10 +217,12 @@ proc loadGameObjects(path: string, renderer: SDL_Renderer): seq[GameObject] =
     return @[]
 
 proc initGame*(): Game =
-  result.state = gsExplore
+  result.state = gsMenu
   result.camPos = vec3f(0f, 0f, 3f)
   result.activeObject = -1
   result.vnActive = false
+  result.menuActive = true
+  result.menuHovered = -1
   result.dialogueTextSpeed = TEXT_SPEED
   result.dialogueInstant = false
   result.stageFinished = false
@@ -445,6 +464,37 @@ proc loadStorylineStage*(game: var Game, file: string, renderer: SDL_Renderer) =
   game.squareClicked = false
   game.stageFinished = false
   game.hasError = false
+
+proc loadMenuStage*(game: var Game, file: string, renderer: SDL_Renderer) =
+  let resolvedFile = resolveGamePath(file)
+
+  if not fileExists(resolvedFile):
+    game.hasError = true
+    game.errorMessage = "load failed " & file
+    return
+
+  let data = parseFile(resolvedFile)
+
+  var menu = MenuScene()
+
+  if data.hasKey("background"):
+    menu.backgroundPath = data["background"].getStr
+    menu.backgroundTexture =
+      loadTextureFromPath(menu.backgroundPath, renderer)
+
+  if data.hasKey("buttons"):
+    for b in data["buttons"]:
+      menu.items.add MenuItem(
+        text: b["text"].getStr,
+        action: b["action"].getStr,
+        target: if b.hasKey("target"): b["target"].getStr else: "",
+        targetType: if b.hasKey("type"): b["type"].getStr else: ""
+      )
+
+  game.menuScene = menu
+  game.menuActive = true
+  game.state = gsMenu
+  game.vnActive = false
 
 proc nextDialogueLine*(game: var Game) =
   if game.currentLine >= game.dialogueLines.len:

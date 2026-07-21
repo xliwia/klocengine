@@ -110,34 +110,6 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
       g.textFinished = false
       g.arrowVisible = true
     return
-
-  let q = k[SDL_SCANCODE_Q.int]
-  if q and not g.qPrev:
-    if g.state == gsDialogue:
-      g.state = gsExplore
-      g.camPos = g.savedCamPos; g.camRot = g.savedCamRot
-      g.squareClicked = false
-      g.textFinished = false
-      if g.activeObject >= 0 and g.activeObject < g.objects.len:
-        g.objects[g.activeObject].rot = 0f
-        g.objects[g.activeObject].bounce = 0f
-      g.dialogueLines = @[]
-      g.currentLine = 0
-      discard SDL_SetWindowRelativeMouseMode(window, true)
-      g.skipMouse = true
-    else:
-      g.state = gsDialogue
-      g.savedCamPos = g.camPos; g.savedCamRot = g.camRot
-      if g.activeObject >= 0 and g.activeObject < g.objects.len:
-        g.camPos = g.objects[g.activeObject].dialogCamPos
-      g.camRot = 0f
-      g.squareClicked = false
-      g.textFinished = false
-      if g.activeObject >= 0 and g.activeObject < g.objects.len:
-        g.objects[g.activeObject].rot = 0f
-        g.objects[g.activeObject].bounce = 0f
-      discard SDL_SetWindowRelativeMouseMode(window, false)
-  g.qPrev = q
   
   if g.camAnimating: return
 
@@ -182,7 +154,8 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
 
     g.camPos = nextPos
     
-    SDL_WarpMouseInWindow(window, float32(winW)/2f, float32(winH)/2f)
+    if g.state == gsExplore and not g.skipMouse:
+      SDL_WarpMouseInWindow(window, float32(winW)/2f, float32(winH)/2f)
 
   
   if g.state == gsDialogue and g.squareClicked:

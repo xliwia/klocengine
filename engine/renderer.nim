@@ -454,6 +454,52 @@ proc drawGroundPlane*(renderer: SDL_Renderer, camPos: Vec3f, camRot: float32, wi
       x += Step
     z += Step
 
+proc drawMenu*(renderer: SDL_Renderer, g: Game, winW, winH: int32) =
+  if g.menuScene.backgroundTexture != nil:
+    var dst = SDL_FRect(
+      x: 0,
+      y: 0,
+      w: float32(winW),
+      h: float32(winH)
+    )
+    discard SDL_RenderTexture(
+      renderer,
+      g.menuScene.backgroundTexture,
+      nil,
+      addr dst
+    )
+  else:
+    SDL_SetRenderDrawColor(renderer, 20,20,30,255)
+    var rect = SDL_FRect(
+      x:0,
+      y:0,
+      w:float32(winW),
+      h:float32(winH)
+    )
+    SDL_RenderFillRect(renderer, addr rect)
+
+
+  var y = float32(winH) * 0.4f
+
+  for i, item in g.menuScene.items:
+    let hovered = i == g.menuHovered
+
+    let col =
+      if hovered:
+        [255'u8,200'u8,50'u8,255'u8]
+      else:
+        [255'u8,255'u8,255'u8,255'u8]
+
+    discard renderTextWithFont(
+      renderer,
+      float32(winW)*0.4f,
+      y,
+      item.text,
+      col
+    )
+
+    y += 70f
+
 proc render*(g: Game, renderer: SDL_Renderer, winW, winH: int32, fps: float32) =
   SDL_SetRenderDrawColor(renderer, 13, 13, 20, 255)
   SDL_RenderClear(renderer)
@@ -462,44 +508,91 @@ proc render*(g: Game, renderer: SDL_Renderer, winW, winH: int32, fps: float32) =
   discard SDL_RenderDebugTextFormat(renderer, 20'f32, 20'f32, "FPS: %.1f".cstring, fps)
 
   var fov = 90f
-  if g.vnActive:
+  if g.state == gsMenu:
+    drawMenu(renderer, g, winW, winH)
+  elif g.vnActive:
     drawVNScene(renderer, g, winW, winH)
   else:
     fov = if g.state == gsDialogue or g.camAnimating: 45f else: 90f
     drawGroundPlane(renderer, g.camPos, g.camRot, winW, winH, fov)
 
-  if not g.vnActive:
+
+  if not g.vnActive and g.state != gsMenu:
     for idx in 0 ..< g.objects.len:
       let obj = g.objects[idx]
       var isThisHovered = false
       var isThisClicked = false
-      
+
       if g.state == gsDialogue:
         isThisClicked = (g.activeObject == idx)
         isThisHovered = (g.activeObject == idx)
       else:
         isThisHovered = g.squareHovered and (g.activeObject == idx)
         isThisClicked = g.squareClicked and (g.activeObject == idx)
-      
-      let fillCol = if isThisHovered: [255'u8, 50, 100, 255] else: [255'u8, 0, 77, 255]
-      let outlineCol = if isThisClicked: [255'u8, 0, 0, 255] 
-                       elif isThisHovered: [255'u8, 255, 100, 255] 
-                       else: [255'u8, 255, 255, 100]
+
+      let fillCol =
+        if isThisHovered:
+          [255'u8, 50, 100, 255]
+        else:
+          [255'u8, 0, 77, 255]
+
+      let outlineCol =
+        if isThisClicked:
+          [255'u8, 0, 0, 255]
+        elif isThisHovered:
+          [255'u8, 255, 100, 255]
+        else:
+          [255'u8, 255, 255, 100]
+
       let outlineThick = if isThisClicked: 5 else: 1
-      
+
       case obj.renderType
       of "billboard":
-        drawBillboard(renderer, obj.points, g.camPos, g.camRot, obj.rot, obj.bounce, 
-                      winW, winH, fov, fillCol, outlineCol, outlineThick, obj.texture)
+        drawBillboard(
+          renderer,
+          obj.points,
+          g.camPos,
+          g.camRot,
+          obj.rot,
+          obj.bounce,
+          winW,
+          winH,
+          fov,
+          fillCol,
+          outlineCol,
+          outlineThick,
+          obj.texture
+        )
       else:
-        drawSquare(renderer, obj.points, g.camPos, g.camRot, obj.rot, obj.bounce, 
-                   winW, winH, fov, fillCol, outlineCol, outlineThick, obj.texture)
-    
-  if not g.vnActive and g.state == gsExplore: drawCrosshair(renderer, winW, winH)
-  
+        drawSquare(
+          renderer,
+          obj.points,
+          g.camPos,
+          g.camRot,
+          obj.rot,
+          obj.bounce,
+          winW,
+          winH,
+          fov,
+          fillCol,
+          outlineCol,
+          outlineThick,
+          obj.texture
+        )
+
+
+  if not g.vnActive and g.state == gsExplore:
+    drawCrosshair(renderer, winW, winH)
+
+
   if g.state == gsDialogue and g.squareClicked and g.showDialogueBox:
     SDL_SetRenderDrawColor(renderer, 20, 20, 40, 255)
-    var r = SDL_FRect(x: float32(winW)*0.05f, y: float32(winH)*0.7f, w: float32(winW)*0.9f, h: float32(winH)*0.25f)
+    var r = SDL_FRect(
+      x: float32(winW)*0.05f,
+      y: float32(winH)*0.7f,
+      w: float32(winW)*0.9f,
+      h: float32(winH)*0.25f
+    )
     SDL_RenderFillRect(renderer, addr r)
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 150)
     SDL_RenderRect(renderer, addr r)
@@ -514,8 +607,14 @@ proc render*(g: Game, renderer: SDL_Renderer, winW, winH: int32, fps: float32) =
         SDL_RenderRect(renderer, addr nameBox)
         
         SDL_SetRenderDrawColor(renderer, 255, 215, 0, 255)
-        SDL_RenderDebugTextFormat(renderer, nameBox.x + 10f, nameBox.y + 6f, "%s", speakerName.cstring)
-    
+        drawStyledText(
+          renderer,
+          nameBox.x + 10f,
+          nameBox.y + 6f,
+          speakerName,
+          [255'u8, 215'u8, 0'u8, 255'u8]
+        )
+            
     if g.textIdx > 0:
       if g.textIdx > 0:
         drawStyledText(

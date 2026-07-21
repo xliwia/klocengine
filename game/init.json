@@ -1,7 +1,16 @@
 {
-  "window": { "width": 1280, "height": 720, "title": "kloc" },
+  "window": {
+    "width": 1280,
+    "height": 720,
+    "title": "kloc"
+  },
+
   "sequence": [
-    { "type": "vn", "file": "vn_sample.json" }
+    {
+      "type": "menu",
+      "file": "main_menu.json"
+    }
   ],
+
   "onComplete": "stop"
 }

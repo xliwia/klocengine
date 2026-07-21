@@ -1,0 +1,24 @@
+{
+  "background": "assets/menu_bg.bmp",
+
+  "buttons": [
+    {
+      "text": "odpal sample vn",
+      "action": "switchseq",
+      "target": "vn_sample.json",
+      "type": "vn"
+    },
+
+    {
+      "text": "odpal sample 3d",
+      "action": "switchseq",
+      "target": "s1.json",
+      "type": "storyline"
+    },
+
+    {
+      "text": "wyjdz",
+      "action": "quit"
+    }
+  ]
+}

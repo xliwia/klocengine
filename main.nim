@@ -46,7 +46,8 @@ proc loadStage(game: var Game, renderer: SDL_Renderer, kind, file: string) =
     echo "attempting to load vn scene ", file
     loadVNStage(game, "game/" & file, renderer)
   of "menu":
-    discard
+    echo "attempting to load menu ", file
+    loadMenuStage(game, "game/" & file, renderer)
   else:
     discard
 
@@ -99,7 +100,9 @@ proc main() =
   doAssert SDL_Init(SDL_INIT_VIDEO)
   let window = SDL_CreateWindow(cstring(winTitle), cint(winW), cint(winH), SDL_WindowFlags(0))
   let renderer = SDL_CreateRenderer(window, nil)
-  discard SDL_SetWindowRelativeMouseMode(window, true)
+
+  discard SDL_SetWindowRelativeMouseMode(window, false)
+  discard SDL_ShowCursor()
 
   var game = initGame()
   if stages.len > 0:
