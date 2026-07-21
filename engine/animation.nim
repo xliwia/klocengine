@@ -186,16 +186,91 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
 
   
   if g.state == gsDialogue and g.squareClicked:
-    if g.textIdx < g.text.len:
+
+  # waiting / delay between VN lines
+    if g.waitingAfterLine:
+      g.waitTimer -= dt
+
+      if g.waitTimer <= 0f:
+        g.waitTimer = 0f
+        g.waitingAfterLine = false
+
+        g.currentLine += 1
+
+        if g.currentLine < g.dialogueLines.len:
+          let line = g.dialogueLines[g.currentLine]
+
+          g.text = line.text
+          g.textIdx = 0
+          g.textTimer = 0f
+          g.textFinished = false
+          g.arrowVisible = true
+          g.showDialogueBox = true
+
+          g.applyDialogueLineCommands(line)
+      return
+
+
+  if g.vnActive:
+    for idx in 0 ..< g.vnScene.characters.len:
+      var ch = addr g.vnScene.characters[idx]
+
+      if ch.opacityActive:
+        ch.opacityTimer += dt
+
+        if ch.opacityDuration > 0f:
+          let t = min(ch.opacityTimer / ch.opacityDuration, 1f)
+          let eased = t * t * (3f - 2f * t)
+
+          ch.opacity =
+            ch.opacityStart +
+            (ch.opacityTarget - ch.opacityStart) * eased
+        else:
+          ch.opacity = ch.opacityTarget
+
+        if ch.opacityTimer >= ch.opacityDuration:
+          ch.opacity = ch.opacityTarget
+          ch.opacityActive = false
+          ch.visible = ch.opacity > 0.01f
+
+      if ch.bounceTimer > 0f:
+        ch.bounceTimer -= dt
+        if ch.bounceTimer <= 0f:
+          ch.bounceTimer = 0f
+
+
+  let cleanText = stripStyleTags(g.text)
+
+  if g.textIdx < cleanText.len:
+
+    if g.dialogueInstant:
+      g.textIdx = cleanText.len
+      g.textFinished = true
+      g.arrowTimer = 0f
+
+    else:
       g.textTimer += dt
-      while g.textTimer >= TEXT_SPEED and g.textIdx < g.text.len:
-        g.textIdx += 1; g.textTimer -= TEXT_SPEED
-      if g.textIdx >= g.text.len:
+
+      let speed =
+        if g.dialogueTextSpeed > 0f:
+          g.dialogueTextSpeed
+        else:
+          TEXT_SPEED
+
+
+      while g.textTimer >= speed and g.textIdx < cleanText.len:
+        g.textIdx += 1
+        g.textTimer -= speed
+
+
+      if g.textIdx >= cleanText.len:
         g.textFinished = true
         g.arrowTimer = 0f
-    
-    if g.textFinished:
-      g.arrowTimer += dt
-      if g.arrowTimer >= 0.5f:
-        g.arrowVisible = not g.arrowVisible
-        g.arrowTimer -= 0.5f
+
+
+  if g.textFinished:
+    g.arrowTimer += dt
+
+    if g.arrowTimer >= 0.5f:
+      g.arrowVisible = not g.arrowVisible
+      g.arrowTimer -= 0.5f

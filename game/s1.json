@@ -24,7 +24,15 @@
         "speaker": "drugi czlowiek",
         "character": "",
         "text": "cojest grane"
-      }
+      },
+      {
+      "speaker": "drugi czlowiek",
+      "character": "",
+      "text": "This line will switch to another scene.",
+      "commands": [
+        { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
+      ]
+    }
     ]
   }
 ]

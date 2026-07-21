@@ -1,0 +1,94 @@
+{
+  "background": "assets/m2.bmp",
+  "characters": [
+    {
+      "id": "hero",
+      "name": "Hero",
+      "sprite": "assets/man.bmp",
+      "alignment": "left"
+    },
+    {
+      "id": "ally",
+      "name": "Ally",
+      "sprite": "assets/man.bmp",
+      "alignment": "right"
+    }
+  ],
+  "dialogue": [
+    {
+      "speaker": "Hero",
+      "character": "hero",
+      "text": "This is the new <red>visual</red> novel mode.",
+      "commands": [
+        { "name": "speed", "args": ["0.01"] },
+        { "name": "showchar", "args": ["hero"] },
+        { "name": "bounce", "args": ["hero", "12"] }
+      ]
+    },
+    {
+      "speaker": "",
+      "character": "",
+      "text": "",
+      "wait": 3
+    },
+    {
+      "speaker": "Hero",
+      "character": "hero",
+      "text": "I will now slide over to the center.",
+      "commands": [
+        { "name": "align", "args": ["hero", "center"] }
+      ]
+    },
+    {
+      "speaker": "Ally",
+      "character": "ally",
+      "text": "I will appear instantly and move to the left.",
+      "commands": [
+        { "name": "instant", "args": [] },
+        { "name": "showchar", "args": ["ally"] },
+        { "name": "align", "args": ["ally", "left"] }
+      ]
+    },
+    {
+      "speaker": "Hero",
+      "character": "hero",
+      "text": "Let me fade away for a moment.",
+      "commands": [
+        { "name": "fadeout", "args": ["hero"] }
+      ]
+    },
+    {
+      "speaker": "Hero",
+      "character": "hero",
+      "text": "And now I fade back in.",
+      "commands": [
+        { "name": "fadein", "args": ["hero"] }
+      ]
+    },
+    {
+      "speaker": "Ally",
+      "character": "ally",
+      "text": "I will hide for a bit, then reappear.",
+      "commands": [
+        { "name": "hidechar", "args": ["ally"] }
+      ]
+    },
+    {
+      "speaker": "Ally",
+      "character": "ally",
+      "text": "I am back.",
+      "commands": [
+        { "name": "showchar", "args": ["ally"] },
+        { "name": "align", "args": ["ally", "right"] }
+      ]
+    },
+    {
+      "speaker": "Hero",
+      "character": "hero",
+      "text": "This line will switch to another scene.",
+      "commands": [
+        { "name": "switchseq", "args": ["dialogue.json", "storyline"] }
+      ]
+    }
+  ]
+}

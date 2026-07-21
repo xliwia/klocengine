@@ -34,22 +34,36 @@ proc loadInitConfig(path: string): tuple[w, h: int32, title: string] =
         stages.add Stage(kind: s["type"].getStr, file: s["file"].getStr)
   return (w, h, title)
 
-proc loadCurrentStage(game: var Game, renderer: SDL_Renderer) =
-  if stageIndex < 0 or stageIndex >= stages.len: return
-  let stage = stages[stageIndex]
-  case stage.kind
+proc loadStage(game: var Game, renderer: SDL_Renderer, kind, file: string) =
+  case kind
   of "storyline":
-    echo "attempting to load ", stage.file
-    loadStorylineStage(game, "game/" & stage.file, renderer)
+    echo "attempting to load ", file
+    loadStorylineStage(game, "game/" & file, renderer)
   of "freetime":
-    echo "attempting to load ", stage.file
-    loadFreetimeStage(game, "game/" & stage.file, renderer)
+    echo "attempting to load ", file
+    loadFreetimeStage(game, "game/" & file, renderer)
+  of "vn":
+    echo "attempting to load vn scene ", file
+    loadVNStage(game, "game/" & file, renderer)
   of "menu":
     discard
   else:
     discard
 
+proc loadCurrentStage(game: var Game, renderer: SDL_Renderer) =
+  if stageIndex < 0 or stageIndex >= stages.len: return
+  let stage = stages[stageIndex]
+  loadStage(game, renderer, stage.kind, stage.file)
+
 proc advanceStage(game: var Game, renderer: SDL_Renderer) =
+  if game.pendingStageFile.len > 0:
+    let kind = if game.pendingStageKind.len > 0: game.pendingStageKind else: "vn"
+    let file = game.pendingStageFile
+    game.pendingStageFile = ""
+    game.pendingStageKind = ""
+    loadStage(game, renderer, kind, file)
+    return
+
   stageIndex.inc
   if stageIndex >= stages.len:
     if onComplete == "loop":

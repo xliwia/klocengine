@@ -1,18 +1,26 @@
 {
   "square_0": [
     { "text": "elo", "character": "" },
-    { "text": "asasa", "character": "" }
+    {
+      "text": "This line switches back to the VN example.",
+      "character": "",
+      "commands": [
+        { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
+      ]
+    }
   ],
   "square_1": [
     { "text": "dhfdfh", "character": "" },
     { "text": "hfdfdhfd", "character": "" },
-    { "text": "dfhfdhfdh", "character": "" }
-  ],
-  "asd": [
-    { "text": "kfgfdgfdfgdafgdaagfdgfadsagafrgfasdagfasgfsgfdsfhgfdsyhdfgh", "character": "" }
-  ],
-  "test": [
+    { "text": "dfhfdhfdh", "character": "" },
     { "text": "siusiak", "character": "" },
-    { "text": "afdgaafgd", "character": "agdfgdfad" }
+    { "text": "afdgaafgd", "character": "agdfgdfad" },
+    {
+      "text": "This line switches back to the VN example.",
+      "character": "",
+      "commands": [
+        { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
+      ]
+    }
   ]
 }

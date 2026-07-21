@@ -12,6 +12,7 @@ pkgs.mkShell {
     libxi
     libGL
     libGLU
+    freetype
     pkg-config
     git
   ];

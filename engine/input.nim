@@ -46,23 +46,46 @@ proc handleEvent*(g: var Game, window: SDL_Window, event: SDL_Event, winW, winH:
           g.textFinished = true
           g.arrowTimer = 0f
         else:
-          g.currentLine += 1
-          if g.currentLine < g.dialogueLines.len:
-            g.text = g.dialogueLines[g.currentLine].text
-            g.textIdx = 0
-            g.textTimer = 0f
-            g.textFinished = false
-            g.arrowVisible = true
+          if g.waitingAfterLine:
+            discard
           else:
-            g.squareClicked = false
-            g.textFinished = false
-            g.state = gsExplore
-            g.camPos = g.savedCamPos
-            g.camRot = g.savedCamRot
-            if g.activeObject >= 0 and g.activeObject < g.objects.len:
-              g.objects[g.activeObject].rot = 0f
-              g.objects[g.activeObject].bounce = 0f
-              g.objects[g.activeObject].spinTimer = 0f
-            discard SDL_SetWindowRelativeMouseMode(window, true)
-            g.skipMouse = true
+            g.currentLine += 1
+
+            if g.currentLine < g.dialogueLines.len:
+              let line = g.dialogueLines[g.currentLine]
+
+              if line.wait > 0f:
+                g.waitTimer = line.wait
+                g.waitingAfterLine = true
+
+                g.text = ""
+                g.textIdx = 0
+                g.textFinished = true
+                g.arrowVisible = false
+                g.showDialogueBox = false
+              else:
+                g.text = line.text
+                g.textIdx = 0
+                g.textTimer = 0f
+                g.textFinished = false
+                g.arrowVisible = true
+                g.applyDialogueLineCommands(line)
+
+            else:
+              if g.pendingStageFile.len > 0:
+                g.stageFinished = true
+              else:
+                g.squareClicked = false
+                g.textFinished = false
+                g.state = gsExplore
+                g.camPos = g.savedCamPos
+                g.camRot = g.savedCamRot
+
+                if g.activeObject >= 0 and g.activeObject < g.objects.len:
+                  g.objects[g.activeObject].rot = 0f
+                  g.objects[g.activeObject].bounce = 0f
+                  g.objects[g.activeObject].spinTimer = 0f
+
+                discard SDL_SetWindowRelativeMouseMode(window, true)
+                g.skipMouse = true
   else: discard

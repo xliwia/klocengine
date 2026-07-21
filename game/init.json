@@ -1,7 +1,7 @@
 {
   "window": { "width": 1280, "height": 720, "title": "kloc" },
   "sequence": [
-    { "type": "storyline", "file": "s1.json" }
+    { "type": "vn", "file": "vn_sample.json" }
   ],
   "onComplete": "stop"
 }
