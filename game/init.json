@@ -8,7 +8,8 @@
   "sequence": [
     {
       "type": "menu",
-      "file": "main_menu.json"
+      "file": "main_menu.json",
+      "music": "assets/music/menu.ogg"
     }
   ],
 

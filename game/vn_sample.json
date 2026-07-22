@@ -2,27 +2,28 @@
   "background": "assets/m2.bmp",
   "characters": [
     {
-      "id": "hero",
-      "name": "Hero",
+      "id": "cwel",
+      "name": "Cwel",
       "sprite": "assets/man.bmp",
       "alignment": "left"
     },
     {
-      "id": "ally",
-      "name": "Ally",
+      "id": "cwel2",
+      "name": "Cwel2",
       "sprite": "assets/man.bmp",
       "alignment": "right"
     }
   ],
   "dialogue": [
     {
-      "speaker": "Hero",
-      "character": "hero",
-      "text": "This is the new <red>visual</red> novel mode.",
+      "speaker": "cwel",
+      "character": "cwel",
+      "text": "efekt <red>czerwony huj</red> zajebisty",
+      "voice": "assets/voice/cwel_001.ogg",
       "commands": [
         { "name": "speed", "args": ["0.01"] },
-        { "name": "showchar", "args": ["hero"] },
-        { "name": "bounce", "args": ["hero", "12"] }
+        { "name": "showchar", "args": ["cwel"] },
+        { "name": "bounce", "args": ["cwel", "1"] }
       ]
     },
     {
@@ -32,60 +33,36 @@
       "wait": 3
     },
     {
-      "speaker": "Hero",
-      "character": "hero",
-      "text": "I will now slide over to the center.",
+      "speaker": "cwel",
+      "character": "cwel",
+      "text": "tp na srodek",
       "commands": [
-        { "name": "align", "args": ["hero", "center"] }
+        { "name": "align", "args": ["cwel", "center"] }
       ]
     },
     {
-      "speaker": "Ally",
-      "character": "ally",
-      "text": "I will appear instantly and move to the left.",
+      "speaker": "cwel2",
+      "character": "cwel2",
+      "text": "tp spowrotem",
       "commands": [
         { "name": "instant", "args": [] },
-        { "name": "showchar", "args": ["ally"] },
-        { "name": "align", "args": ["ally", "left"] }
+        { "name": "showchar", "args": ["cwel"] },
+        { "name": "align", "args": ["cwel", "left"] }
       ]
     },
     {
-      "speaker": "Hero",
-      "character": "hero",
-      "text": "Let me fade away for a moment.",
+      "speaker": "cwel2",
+      "character": "cwel2",
+      "text": "spierdalam",
       "commands": [
-        { "name": "fadeout", "args": ["hero"] }
+        { "name": "fadeout", "args": ["cwel2"] },
+        { "name": "bounce", "args": ["cwel2", "100"] }
       ]
     },
     {
-      "speaker": "Hero",
-      "character": "hero",
-      "text": "And now I fade back in.",
-      "commands": [
-        { "name": "fadein", "args": ["hero"] }
-      ]
-    },
-    {
-      "speaker": "Ally",
-      "character": "ally",
-      "text": "I will hide for a bit, then reappear.",
-      "commands": [
-        { "name": "hidechar", "args": ["ally"] }
-      ]
-    },
-    {
-      "speaker": "Ally",
-      "character": "ally",
-      "text": "I am back.",
-      "commands": [
-        { "name": "showchar", "args": ["ally"] },
-        { "name": "align", "args": ["ally", "right"] }
-      ]
-    },
-    {
-      "speaker": "Hero",
-      "character": "hero",
-      "text": "This line will switch to another scene.",
+      "speaker": "cwel",
+      "character": "cwel",
+      "text": "zmiana planu",
       "commands": [
         { "name": "switchseq", "args": ["dialogue.json", "storyline"] }
       ]

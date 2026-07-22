@@ -14,7 +14,9 @@ type
     textSpeed*: float32
     instant*: bool
     wait*: float32
-
+    voice*: string
+    sfx*: string
+    
   DialogueData* = Table[string, seq[DialogueLine]]
 
 var dialogueData: DialogueData

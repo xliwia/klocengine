@@ -1,12 +1,12 @@
 # engine/game.nim
-import sdl3, glm
-import dialogue, config
+import sdl3, glm, sdl_image
+import dialogue, config, audio
 import std/[json, os, strutils]
 
 type
   GameState* = enum
     gsExplore
-    gsDialogue
+    gsDialogue  
     gsMenu
 
   VNCharacter* = object
@@ -72,6 +72,7 @@ type
     vnScene*: VNScene
     pendingStageKind*: string
     pendingStageFile*: string
+    pendingStageMusic*: string
     dialogueTextSpeed*: float32
     dialogueInstant*: bool
     stageFinished*: bool
@@ -93,7 +94,13 @@ type
   MenuScene* = object
     backgroundPath*: string
     backgroundTexture*: ptr SDL_Texture
+    images*: seq[MenuImage]
     items*: seq[MenuItem]
+
+  MenuImage* = object
+    path*: string
+    texture*: ptr SDL_Texture
+    x*, y*, w*, h*: float32
 
 proc findProjectRoot(startDir: string): string =
   var dir = if startDir.len > 0: absolutePath(startDir) else: absolutePath(getCurrentDir())
@@ -143,22 +150,33 @@ proc resolveGamePath*(path: string): string =
 proc loadTextureFromPath(path: string, renderer: SDL_Renderer): ptr SDL_Texture =
   if path.len == 0:
     return nil
+
   let resolvedPath = resolveGamePath(path)
+
   if not fileExists(resolvedPath):
     echo "texture missing: ", resolvedPath
     return nil
 
-  let surface = SDL_LoadBMP(resolvedPath.cstring)
+  var surface: ptr SDL_Surface = nil
+
+  if resolvedPath.endsWith(".png") or resolvedPath.endsWith(".PNG"):
+    surface = IMG_Load(resolvedPath.cstring)
+  else:
+    surface = SDL_LoadBMP(resolvedPath.cstring)
+
   if surface == nil:
     echo "could not load texture: ", resolvedPath
     return nil
 
   let nativeTex = SDL_CreateTextureFromSurface(renderer, surface)
   SDL_DestroySurface(surface)
+
   if nativeTex == nil:
     return nil
+
   discard SDL_SetTextureBlendMode(nativeTex, SDL_BLENDMODE_BLEND)
   discard SDL_SetTextureAlphaMod(nativeTex, 255'u8)
+
   return cast[ptr SDL_Texture](nativeTex)
 
 proc loadGameObjects(path: string, renderer: SDL_Renderer): seq[GameObject] =
@@ -185,7 +203,7 @@ proc loadGameObjects(path: string, renderer: SDL_Renderer): seq[GameObject] =
           if surface != nil:
             echo "SDL_Surface created for: ", texPath
             
-            # Tworzymy teksturę i bezpiecznie rzutujemy ją na wskaźnik ptr
+            # create n cast texture + debug
             let nativeTex = SDL_CreateTextureFromSurface(renderer, surface)
             loadedTex = cast[ptr SDL_Texture](nativeTex)
             
@@ -391,23 +409,41 @@ proc loadVNStage*(game: var Game, file: string, renderer: SDL_Renderer) =
                 args.add argNode.getStr
             cmdSeq.add DialogueCommand(name: cmdNode["name"].getStr, args: args)
 
+
         scene.dialogueLines.add DialogueLine(
           speaker: if lineNode.hasKey("speaker"): lineNode["speaker"].getStr else: "",
           text: if lineNode.hasKey("text"): lineNode["text"].getStr else: "",
           character: if lineNode.hasKey("character"): lineNode["character"].getStr else: "",
+
+          voice: (
+            if lineNode.hasKey("voice"):
+              lineNode["voice"].getStr
+            else:
+              ""
+          ),
+
+          sfx: (
+            if lineNode.hasKey("sfx"):
+              lineNode["sfx"].getStr
+            else:
+              ""
+          ),
           commands: cmdSeq,
+
           textSpeed: (
             if lineNode.hasKey("textSpeed"):
               lineNode["textSpeed"].getFloat
             else:
               0f
           ),
+
           instant: (
             if lineNode.hasKey("instant"):
               lineNode["instant"].getBool
             else:
               false
           ),
+
           wait: (
             if lineNode.hasKey("wait"):
               lineNode["wait"].getFloat
@@ -434,7 +470,15 @@ proc loadVNStage*(game: var Game, file: string, renderer: SDL_Renderer) =
     game.waitTimer = 0f
     game.waitingAfterLine = false
     if scene.dialogueLines.len > 0:
-      game.applyDialogueLineCommands(scene.dialogueLines[0])
+      let firstLine = scene.dialogueLines[0]
+
+      game.applyDialogueLineCommands(firstLine)
+
+      echo "VOICE VALUE = [", firstLine.voice, "]"
+
+      if firstLine.voice.len > 0:
+        playVoice(resolveGamePath(firstLine.voice))
+
     game.stageFinished = false
     game.hasError = false
   except JsonParsingError as e:
@@ -482,6 +526,20 @@ proc loadMenuStage*(game: var Game, file: string, renderer: SDL_Renderer) =
     menu.backgroundTexture =
       loadTextureFromPath(menu.backgroundPath, renderer)
 
+  if data.hasKey("images"):
+    for img in data["images"]:
+      menu.images.add MenuImage(
+        path: img["path"].getStr,
+        texture: loadTextureFromPath(
+          img["path"].getStr,
+          renderer
+        ),
+        x: float32(img["x"].getFloat),
+        y: float32(img["y"].getFloat),
+        w: float32(img["w"].getFloat),
+        h: float32(img["h"].getFloat)
+      )
+
   if data.hasKey("buttons"):
     for b in data["buttons"]:
       menu.items.add MenuItem(
@@ -496,32 +554,48 @@ proc loadMenuStage*(game: var Game, file: string, renderer: SDL_Renderer) =
   game.state = gsMenu
   game.vnActive = false
 
+
 proc nextDialogueLine*(game: var Game) =
   if game.currentLine >= game.dialogueLines.len:
     return
 
-  let current = game.dialogueLines[game.currentLine]
+  game.currentLine += 1
 
-  if current.wait > 0f:
-    game.waitTimer = current.wait
+  if game.currentLine >= game.dialogueLines.len:
+    return
+
+  let line = game.dialogueLines[game.currentLine]
+
+  if line.wait > 0f:
+    game.waitTimer = line.wait
     game.waitingAfterLine = true
+    game.showDialogueBox = false
     game.text = ""
     game.textIdx = 0
     game.textFinished = true
     return
 
-  game.currentLine += 1
 
-  if game.currentLine < game.dialogueLines.len:
-    let line = game.dialogueLines[game.currentLine]
+  game.text = line.text
+  game.textIdx = 0
+  game.textTimer = 0f
+  game.textFinished = false
+  game.showDialogueBox = true
+  game.arrowVisible = true
 
-    game.text = line.text
-    game.textIdx = 0
-    game.textTimer = 0f
-    game.textFinished = false
 
-    game.applyDialogueLineCommands(line)
+  echo "VOICE VALUE = [", line.voice, "]"
 
+  if line.voice.len > 0:
+    playVoice(resolveGamePath(line.voice))
+
+#  if line.sfx.len > 0:
+#    playSfx(resolveGamePath(line.sfx))
+
+
+  game.applyDialogueLineCommands(line)
+
+    
 proc loadFreetimeStage*(game: var Game, file: string, renderer: SDL_Renderer) = 
   let resolvedFile = resolveGamePath(file)
   if not fileExists(resolvedFile):

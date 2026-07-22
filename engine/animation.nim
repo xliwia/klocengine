@@ -117,7 +117,7 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
     let forward = vec3f(-sin(g.camRot), 0f, -cos(g.camRot))
     let right = vec3f(cos(g.camRot), 0f, -sin(g.camRot))
     
-    # 1. Obliczamy pożądaną, następną pozycję na podstawie wciśniętych klawiszy
+    # calculate moving dir based on key input
     var nextPos = g.camPos
     if k[SDL_SCANCODE_W.int]: nextPos = nextPos + forward * MOVE_SPEED * dt * 60f
     if k[SDL_SCANCODE_S.int]: nextPos = nextPos - forward * MOVE_SPEED * dt * 60f
@@ -157,33 +157,18 @@ proc update*(g: var Game, window: SDL_Window, dt, mx, my: float32, winW, winH: i
     if g.state == gsExplore and not g.skipMouse:
       SDL_WarpMouseInWindow(window, float32(winW)/2f, float32(winH)/2f)
 
-  
-  if g.state == gsDialogue and g.squareClicked:
+    if g.state == gsDialogue and g.squareClicked:
 
-  # waiting / delay between VN lines
-    if g.waitingAfterLine:
-      g.waitTimer -= dt
+      if g.waitingAfterLine:
+        g.waitTimer -= dt
 
-      if g.waitTimer <= 0f:
-        g.waitTimer = 0f
-        g.waitingAfterLine = false
+        if g.waitTimer <= 0f:
+          g.waitTimer = 0f
+          g.waitingAfterLine = false
+          g.nextDialogueLine()
 
-        g.currentLine += 1
-
-        if g.currentLine < g.dialogueLines.len:
-          let line = g.dialogueLines[g.currentLine]
-
-          g.text = line.text
-          g.textIdx = 0
-          g.textTimer = 0f
-          g.textFinished = false
-          g.arrowVisible = true
-          g.showDialogueBox = true
-
-          g.applyDialogueLineCommands(line)
-      return
-
-
+        return
+      
   if g.vnActive:
     for idx in 0 ..< g.vnScene.characters.len:
       var ch = addr g.vnScene.characters[idx]

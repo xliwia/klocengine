@@ -4,6 +4,8 @@ pkgs.mkShell {
   buildInputs = with pkgs; [
     nim
     sdl3
+    sdl3-image
+    sdl3-mixer
     libx11
     libxext
     libxrandr

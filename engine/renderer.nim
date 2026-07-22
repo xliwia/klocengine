@@ -462,26 +462,52 @@ proc drawMenu*(renderer: SDL_Renderer, g: Game, winW, winH: int32) =
       w: float32(winW),
       h: float32(winH)
     )
+
     discard SDL_RenderTexture(
       renderer,
       g.menuScene.backgroundTexture,
       nil,
       addr dst
     )
+
   else:
     SDL_SetRenderDrawColor(renderer, 20,20,30,255)
+
     var rect = SDL_FRect(
-      x:0,
-      y:0,
-      w:float32(winW),
-      h:float32(winH)
+      x: 0,
+      y: 0,
+      w: float32(winW),
+      h: float32(winH)
     )
+
     SDL_RenderFillRect(renderer, addr rect)
 
 
+  # obrazki menu
+  for img in g.menuScene.images:
+
+    if img.texture != nil:
+
+      var imgRect = SDL_FRect(
+        x: img.x,
+        y: img.y,
+        w: img.w,
+        h: img.h
+      )
+
+      discard SDL_RenderTexture(
+        renderer,
+        img.texture,
+        nil,
+        addr imgRect
+      )
+
+
+  # tekst/przyciski
   var y = float32(winH) * 0.4f
 
   for i, item in g.menuScene.items:
+
     let hovered = i == g.menuHovered
 
     let col =
@@ -489,6 +515,7 @@ proc drawMenu*(renderer: SDL_Renderer, g: Game, winW, winH: int32) =
         [255'u8,200'u8,50'u8,255'u8]
       else:
         [255'u8,255'u8,255'u8,255'u8]
+
 
     discard renderTextWithFont(
       renderer,
@@ -499,7 +526,7 @@ proc drawMenu*(renderer: SDL_Renderer, g: Game, winW, winH: int32) =
     )
 
     y += 70f
-
+    
 proc render*(g: Game, renderer: SDL_Renderer, winW, winH: int32, fps: float32) =
   SDL_SetRenderDrawColor(renderer, 13, 13, 20, 255)
   SDL_RenderClear(renderer)

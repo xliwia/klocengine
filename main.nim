@@ -1,13 +1,14 @@
 # main.nim
 import sdl3
-import engine/[game, renderer, input, animation]
+import engine/[game, renderer, input, animation, audio]
 import std/[json, os]
 
 type
   Stage = object
     kind: string
     file: string
-
+    music: string
+    
 var stages: seq[Stage]
 var stageIndex = 0
 var onComplete = "stop"
@@ -31,7 +32,11 @@ proc loadInitConfig(path: string): tuple[w, h: int32, title: string] =
       onComplete = data["onComplete"].getStr
     if data.hasKey("sequence"):
       for s in data["sequence"]:
-        stages.add Stage(kind: s["type"].getStr, file: s["file"].getStr)
+          stages.add Stage(
+          kind: s["type"].getStr,
+          file: s["file"].getStr,
+          music: if s.hasKey("music"): s["music"].getStr else: ""
+          )
   return (w, h, title)
 
 proc loadStage(game: var Game, renderer: SDL_Renderer, kind, file: string) =
@@ -53,19 +58,41 @@ proc loadStage(game: var Game, renderer: SDL_Renderer, kind, file: string) =
 
 proc loadCurrentStage(game: var Game, renderer: SDL_Renderer) =
   if stageIndex < 0 or stageIndex >= stages.len: return
+
   let stage = stages[stageIndex]
+
+  echo "DEBUG MUSIC VALUE = [", stage.music, "]"
+
+  if stage.music.len > 0:
+    playMusic(stage.music)
+  else:
+    echo "stage has no music"
+    stopMusic()
+
   loadStage(game, renderer, stage.kind, stage.file)
 
 proc advanceStage(game: var Game, renderer: SDL_Renderer) =
   if game.pendingStageFile.len > 0:
     let kind = if game.pendingStageKind.len > 0: game.pendingStageKind else: "vn"
     let file = game.pendingStageFile
+
+    echo "ADVANCE -> ", file
+    echo "NEXT MUSIC = [", game.pendingStageMusic, "]"
+
+    if game.pendingStageMusic.len > 0:
+      playMusic(game.pendingStageMusic)
+    else:
+      stopMusic()
+
     game.pendingStageFile = ""
     game.pendingStageKind = ""
+    game.pendingStageMusic = ""
+
     loadStage(game, renderer, kind, file)
     return
 
   stageIndex.inc
+
   if stageIndex >= stages.len:
     if onComplete == "loop":
       stageIndex = 0
@@ -73,6 +100,7 @@ proc advanceStage(game: var Game, renderer: SDL_Renderer) =
       game.hasError = true
       game.errorMessage = "no more stages (end of seq in init.json)"
       return
+
   loadCurrentStage(game, renderer)
 
 proc drawErrorOverlay(renderer: SDL_Renderer, game: Game, winW, winH: int32) =
@@ -97,7 +125,8 @@ proc main() =
   skipBtnX = float32(winW) - skipBtnW - 20'f32
   skipBtnY = float32(winH) - skipBtnH - 20'f32
 
-  doAssert SDL_Init(SDL_INIT_VIDEO)
+  doAssert SDL_Init(SDL_INIT_VIDEO or SDL_INIT_AUDIO)
+  initAudio()
   let window = SDL_CreateWindow(cstring(winTitle), cint(winW), cint(winH), SDL_WindowFlags(0))
   let renderer = SDL_CreateRenderer(window, nil)
 

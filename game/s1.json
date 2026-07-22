@@ -28,7 +28,7 @@
       {
       "speaker": "drugi czlowiek",
       "character": "",
-      "text": "This line will switch to another scene.",
+      "text": "zmiana sceny",
       "commands": [
         { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
       ]

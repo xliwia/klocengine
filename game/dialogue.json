@@ -2,7 +2,7 @@
   "square_0": [
     { "text": "elo", "character": "" },
     {
-      "text": "This line switches back to the VN example.",
+      "text": "aaa",
       "character": "",
       "commands": [
         { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
@@ -16,7 +16,7 @@
     { "text": "siusiak", "character": "" },
     { "text": "afdgaafgd", "character": "agdfgdfad" },
     {
-      "text": "This line switches back to the VN example.",
+      "text": "powrot",
       "character": "",
       "commands": [
         { "name": "switchseq", "args": ["vn_sample.json", "vn"] }
